@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#10253f">
+    <meta
+      name="description"
+      content="Panel estático para analizar datasets CMMS, explorar indicadores de mantenimiento y exportar informes ejecutivos."
+    >
+    <title>CMMS Optimus | Analítica de mantenimiento</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="./styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js" defer></script>
+    <script src="./data/CMMS_grupos_A_D.js" defer></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell" id="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#inicio" aria-label="CMMS Optimus, inicio">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+              <path d="M20 5.5 23 8l4-.4 1.5 3.6 3.6 1.5-.4 4 2.5 3.3-2.5 3.3.4 4-3.6 1.5-1.5 3.6-4-.4-3 2.5-3-2.5-4 .4-1.5-3.6-3.6-1.5.4-4-2.5-3.3 2.5-3.3-.4-4 3.6-1.5 1.5-3.6 4 .4 3-2.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <circle cx="20" cy="20" r="5.1" stroke="currentColor" stroke-width="2"/>
+              <path d="m17.8 20.1 1.5 1.5 3.1-3.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="brand-copy">
+            <strong>CMMS</strong>
+            <span>OPTIMUS</span>
+            <small>Víctor A. Cortés M.</small>
+          </span>
+        </a>
+
+        <div class="sidebar-label">ESPACIO DE TRABAJO</div>
+        <nav class="side-nav" aria-label="Navegación principal">
+          <a class="nav-link active" href="#inicio">
+            <span class="nav-icon" aria-hidden="true">⌂</span>
+            <span>Resumen ejecutivo</span>
+          </a>
+          <a class="nav-link" href="#indicadores">
+            <span class="nav-icon" aria-hidden="true">▦</span>
+            <span>Indicadores</span>
+          </a>
+          <a class="nav-link" href="#diagnostico">
+            <span class="nav-icon" aria-hidden="true">⌁</span>
+            <span>Diagnóstico</span>
+          </a>
+          <a class="nav-link" href="#activos">
+            <span class="nav-icon" aria-hidden="true">◉</span>
+            <span>Activos críticos</span>
+          </a>
+          <a class="nav-link" href="#datos">
+            <span class="nav-icon" aria-hidden="true">⇧</span>
+            <span>Datos y exportación</span>
+          </a>
+        </nav>
+
+        <section class="sidebar-datasets" id="sidebar-datasets" aria-labelledby="sidebar-datasets-title">
+          <h2 class="sidebar-label" id="sidebar-datasets-title">DATASETS DISPONIBLES</h2>
+          <div class="sidebar-dataset-list" id="sidebar-dataset-list" role="group" aria-label="Seleccionar datasets para visualizar"></div>
+        </section>
+
+        <div class="sidebar-bottom">
+          <div class="privacy-card">
+            <span class="privacy-icon" aria-hidden="true">⌑</span>
+            <strong>Procesamiento local</strong>
+            <p>Los CSV se analizan en tu navegador. No se envían a un servidor.</p>
+          </div>
+          <div class="sidebar-foot">
+            <span class="status-dot"></span>
+            Aplicación estática · GitHub Pages
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-content" id="inicio">
+        <header class="topbar">
+          <div class="breadcrumbs">
+            <span>CMMS Optimus</span>
+            <span class="breadcrumb-sep">/</span>
+            <strong id="breadcrumb-current">Resumen ejecutivo</strong>
+          </div>
+          <div class="topbar-right">
+            <div class="local-badge"><span class="status-dot"></span> Datos en este dispositivo</div>
+            <button class="button button-primary button-small" id="header-pdf" type="button">
+              <span aria-hidden="true">↓</span> Exportar informe
+            </button>
+          </div>
+        </header>
+
+        <div class="page-content">
+          <section class="hero-section">
+            <div class="hero-copy">
+              <div class="eyebrow"><span class="eyebrow-line"></span> GESTIÓN DE MANTENIMIENTO · INTELIGENCIA OPERACIONAL</div>
+              <h1>Convierte tus datos en<br><span>decisiones de mantenimiento.</span></h1>
+              <p class="hero-description">
+                Una mirada clara al desempeño de tus activos: importa tus datos CMMS, descubre prioridades y enfoca mejor tus decisiones.
+              </p>
+              <button class="button button-light hero-primary-action" id="hero-upload" type="button">
+                <span aria-hidden="true">＋</span> Comenzar análisis
+              </button>
+            </div>
+            <div class="hero-side">
+              <div class="hero-showcase" aria-label="Flujo de análisis de mantenimiento">
+                <div class="showcase-heading">
+                  <span class="showcase-mark" aria-hidden="true">CM</span>
+                  <div><strong>Analítica operacional</strong><span>Del registro a la acción</span></div>
+                  <span class="showcase-live"><i></i> LOCAL</span>
+                </div>
+                <div class="showcase-flow">
+                  <div class="showcase-step"><span>01</span><div><strong>Importa tus datos</strong><small>CSV de tu operación</small></div><b aria-hidden="true">↗</b></div>
+                  <div class="showcase-connector" aria-hidden="true"></div>
+                  <div class="showcase-step"><span>02</span><div><strong>Comprende el desempeño</strong><small>Indicadores y tendencias</small></div><b aria-hidden="true">⌁</b></div>
+                  <div class="showcase-connector" aria-hidden="true"></div>
+                  <div class="showcase-step"><span>03</span><div><strong>Prioriza tus acciones</strong><small>Fallas y activos críticos</small></div><b aria-hidden="true">◎</b></div>
+                </div>
+              </div>
+              <div class="hero-actions">
+              <button class="button button-outline-light" id="hero-pdf" type="button">
+                <span aria-hidden="true">↓</span> Informe PDF
+              </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="marketing-features" aria-label="Capacidades de CMMS Optimus">
+            <article class="marketing-feature">
+              <span class="feature-icon" aria-hidden="true">▥</span>
+              <div><strong>Actividad y mantenibilidad</strong><p>Visualiza estrategias, esfuerzo y tiempos de reparación.</p></div>
+              <span class="feature-index">01</span>
+            </article>
+            <article class="marketing-feature">
+              <span class="feature-icon feature-icon-teal" aria-hidden="true">⌁</span>
+              <div><strong>Fallas prioritarias</strong><p>Identifica dónde se concentran frecuencia, downtime y costo.</p></div>
+              <span class="feature-index">02</span>
+            </article>
+            <article class="marketing-feature">
+              <span class="feature-icon feature-icon-amber" aria-hidden="true">◎</span>
+              <div><strong>Criticidad de activos</strong><p>Orienta la atención hacia equipos y modos de falla relevantes.</p></div>
+              <span class="feature-index">03</span>
+            </article>
+          </section>
+
+          <section class="initial-upload-section" id="initial-upload-section" aria-labelledby="initial-upload-title">
+            <span class="initial-upload-icon" aria-hidden="true">↑</span>
+            <div class="initial-upload-copy">
+              <div class="eyebrow eyebrow-muted" id="initial-upload-kicker">BIENVENIDO/A A CMMS OPTIMUS</div>
+              <h2 id="initial-upload-title">¡Comienza cargando tus datos!</h2>
+              <p id="initial-upload-description">Selecciona uno o más archivos CSV para iniciar tus análisis de mantenimiento.</p>
+            </div>
+            <button class="button button-primary" id="initial-upload-button" type="button">
+              Seleccionar dataset CSV
+            </button>
+          </section>
+
+          <section class="filter-row" aria-label="Filtros del panel">
+            <div class="filter-caption">
+              <span class="filter-icon" aria-hidden="true">⌘</span>
+              <div><strong>Vista de análisis</strong><span>Cambia entre datasets cargados en esta sesión</span></div>
+            </div>
+            <div class="filter-control">
+              <label for="group-filter">GRUPO / DATASET</label>
+              <select id="group-filter" aria-label="Filtrar por grupo"></select>
+            </div>
+            <div class="filter-control">
+              <label for="date-filter">PERÍODO ANALIZADO</label>
+              <div class="date-range" id="date-range">Cargando fechas…</div>
+            </div>
+            <div class="filter-dataset-status" id="data-status">
+              <span class="status-dot"></span><span>Preparando muestra</span>
+            </div>
+          </section>
+
+          <section class="section-block" id="indicadores">
+            <div class="section-heading">
+              <div>
+                <div class="eyebrow eyebrow-muted">VISTA GENERAL</div>
+                <h2>Resumen ejecutivo</h2>
+                <p class="section-subtitle">Magnitud del trabajo e impacto observado en el período seleccionado.</p>
+              </div>
+              <div class="section-meta" id="summary-meta">—</div>
+            </div>
+            <div class="kpi-grid" id="kpi-grid" aria-live="polite"></div>
+
+            <div class="grid-two overview-grid">
+              <article class="panel chart-panel">
+                <div class="panel-heading">
+                  <div><h3>Volumen e impacto</h3><p>Magnitud relativa de la selección activa</p></div>
+                  <span class="panel-kicker">RESUMEN</span>
+                </div>
+                <div class="chart-wrap chart-medium"><canvas id="overview-chart" aria-label="Comparación de órdenes, HH, downtime y costos"></canvas></div>
+              </article>
+              <article class="panel insight-panel">
+                <div class="panel-heading">
+                  <div><h3>Lecturas clave</h3><p>Señales principales del conjunto seleccionado</p></div>
+                  <span class="insight-spark" aria-hidden="true">✦</span>
+                </div>
+                <div id="insights-list" class="insights-list"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="section-block" id="diagnostico">
+            <div class="section-heading">
+              <div>
+                <div class="eyebrow eyebrow-muted">DESEMPEÑO DEL MANTENIMIENTO</div>
+                <h2>Actividad y mantenibilidad</h2>
+                <p class="section-subtitle">Composición del trabajo, esfuerzo y tiempo de reparación.</p>
+              </div>
+            </div>
+            <div class="grid-two">
+              <article class="panel chart-panel">
+                <div class="panel-heading">
+                  <div><h3>Distribución por estrategia</h3><p>Órdenes únicas por tipo de mantenimiento</p></div>
+                  <span class="chart-unit">OT · %</span>
+                </div>
+                <div class="chart-wrap chart-compact"><canvas id="maintenance-chart" aria-label="Órdenes de trabajo por tipo de mantenimiento"></canvas></div>
+              </article>
+              <article class="panel chart-panel">
+                <div class="panel-heading">
+                  <div><h3>Impacto correctivo</h3><p>Participación del correctivo en el total</p></div>
+                  <span class="chart-unit">PARTICIPACIÓN · %</span>
+                </div>
+                <div class="chart-wrap chart-compact"><canvas id="corrective-chart" aria-label="Participación correctiva en órdenes, HH, downtime y costo"></canvas></div>
+              </article>
+              <article class="panel chart-panel panel-wide">
+                <div class="panel-heading">
+                  <div><h3>MTTR por tipo de equipo</h3><p>Solo correctivas cerradas con inicio y término válidos</p></div>
+                  <span class="chart-unit">HORAS</span>
+                </div>
+                <div class="chart-wrap chart-tall"><canvas id="mttr-chart" aria-label="MTTR por tipo de equipo"></canvas></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="section-block">
+            <div class="section-heading">
+              <div>
+                <div class="eyebrow eyebrow-muted">PRIORIZACIÓN DE FALLAS</div>
+                <h2>Modos de falla prioritarios</h2>
+                <p class="section-subtitle">Pareto dinámico sobre OT correctivas con modo de falla registrado.</p>
+              </div>
+              <div class="segmented-control" role="group" aria-label="Métrica del Pareto">
+                <button type="button" class="segment active" data-pareto="frequency">Frecuencia</button>
+                <button type="button" class="segment" data-pareto="downtime">Downtime</button>
+                <button type="button" class="segment" data-pareto="cost">Costo</button>
+              </div>
+            </div>
+            <article class="panel chart-panel">
+              <div class="panel-heading">
+                <div><h3 id="pareto-title">Pareto por frecuencia</h3><p>Top 10 y porcentaje acumulado</p></div>
+                <span class="chart-unit">TOP 10</span>
+              </div>
+              <div class="chart-wrap chart-tall"><canvas id="pareto-chart" aria-label="Diagrama Pareto de modos de falla"></canvas></div>
+            </article>
+          </section>
+
+          <section class="section-block" id="activos">
+            <div class="section-heading">
+              <div>
+                <div class="eyebrow eyebrow-muted">CONFIABILIDAD DE ACTIVOS</div>
+                <h2>Criticidad Jack-Knife</h2>
+                <p class="section-subtitle">Frecuencia relativa frente al MTTR relativo; los límites se calculan dentro de cada dataset.</p>
+              </div>
+              <div class="segmented-control" role="group" aria-label="Entidad del diagrama Jack-Knife">
+                <button type="button" class="segment active" data-jk="equipment">Equipos</button>
+                <button type="button" class="segment" data-jk="failure">Modos de falla</button>
+              </div>
+            </div>
+            <div class="grid-two jackknife-grid">
+              <article class="panel chart-panel">
+                <div class="panel-heading">
+                  <div><h3 id="jackknife-title">Mapa de criticidad por equipo</h3><p>Frecuencia normalizada vs. MTTR normalizado</p></div>
+                  <span class="chart-unit">EJE LOGARÍTMICO</span>
+                </div>
+                <div class="chart-wrap chart-jackknife"><canvas id="jackknife-chart" aria-label="Diagrama Jack-Knife de criticidad"></canvas></div>
+                <div class="quadrant-legend">
+                  <span><i class="legend-dot dot-grave"></i> Grave</span>
+                  <span><i class="legend-dot dot-agudo"></i> Agudo</span>
+                  <span><i class="legend-dot dot-cronico"></i> Crónico</span>
+                  <span><i class="legend-dot dot-control"></i> Bajo control</span>
+                </div>
+              </article>
+              <article class="panel table-panel">
+                <div class="panel-heading">
+                  <div><h3 id="critical-table-title">Equipos de mayor riesgo</h3><p>Ordenados por riesgo relativo R*</p></div>
+                  <span class="panel-kicker">TOP 10</span>
+                </div>
+                <div class="table-scroll">
+                  <table class="data-table">
+                    <thead id="critical-head"></thead>
+                    <tbody id="critical-body"></tbody>
+                  </table>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="section-block" id="datos">
+            <div class="section-heading">
+              <div>
+                <div class="eyebrow eyebrow-muted">GESTIÓN DE DATOS</div>
+                <h2>Datasets y exportación</h2>
+                <p class="section-subtitle">Los datasets cargados quedan disponibles temporalmente mientras mantengas esta página abierta.</p>
+              </div>
+            </div>
+            <div class="grid-two data-grid">
+              <article class="panel upload-panel">
+                <div class="panel-heading">
+                  <div><h3>Agregar dataset CMMS</h3><p>CSV con encabezados · varios grupos a la vez</p></div>
+                  <span class="upload-symbol" aria-hidden="true">⇧</span>
+                </div>
+                <button class="drop-zone" id="drop-zone" type="button">
+                  <span class="drop-icon" aria-hidden="true">↑</span>
+                  <strong>Arrastra tus CSV aquí</strong>
+                  <span>o selecciona archivos desde tu dispositivo</span>
+                  <span class="drop-format">CSV · UTF-8 · delimitador coma o punto y coma</span>
+                </button>
+                <input id="file-input" type="file" accept=".csv,text/csv" multiple hidden>
+                <div class="data-help">
+                  <span class="help-icon" aria-hidden="true">i</span>
+                  <p>El grupo se identifica desde el nombre del archivo (por ejemplo, <code>CMMS_grupo_A.csv</code>). Si ya existe, se reemplaza. Los datos permanecen solo durante esta sesión y no se envían a un servidor.</p>
+                </div>
+              </article>
+              <article class="panel dataset-panel">
+                <div class="panel-heading">
+                  <div><h3>Grupos disponibles</h3><p id="dataset-count">—</p></div>
+                  <button class="text-button" id="reset-sample" type="button">Restaurar grupos A–D</button>
+                </div>
+                <div id="dataset-list" class="dataset-list"></div>
+                <div class="export-row">
+                  <button class="button button-primary" id="export-pdf" type="button"><span aria-hidden="true">↓</span> Informe ejecutivo PDF</button>
+                  <button class="button button-secondary" id="export-csv" type="button"><span aria-hidden="true">▤</span> Resumen CSV</button>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <footer class="page-footer">
+            <span>CMMS Optimus <span class="footer-dot">·</span> Desarrollado por Víctor A. Cortés M.</span>
+            <span>Procesamiento local en el navegador</span>
+          </footer>
+        </div>
+      </main>
+    </div>
+    <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+  </body>
+</html>
